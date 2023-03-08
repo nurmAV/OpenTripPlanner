@@ -153,7 +153,8 @@ public final class GtfsFaresV2Service implements Serializable {
       // covers this area
       matchesArea(leg.getFrom().stop, rule.fromAreaId(), fromAreasWithRules) &&
       matchesArea(leg.getTo().stop, rule.toAreadId(), toAreasWithRules) &&
-      matchesDistance(leg, rule)
+      matchesDistance(leg, rule) &&
+      matchesTimeFrame(leg, rule)
     );
   }
 
@@ -254,6 +255,32 @@ public final class GtfsFaresV2Service implements Serializable {
 
       return legDistance > ruleMin.toMeters() && legDistance < ruleMax.toMeters();
     } else return true;
+  }
+
+  private boolean matchesTimeFrame(ScheduledTransitLeg leg, FareLegRule rule) {
+    if (rule.fromTimeFrame() == null && rule.toTimeframe() == null) return true;
+    var startTime = leg.getStartTime().toLocalTime();
+    var endTime = leg.getEndTime().toLocalTime();
+
+    System.out.println("Leg start time: " + startTime);
+    System.out.println("Leg end time: " + endTime);
+    System.out.println(
+      "From rule:  " + rule.fromTimeFrame().startTime() + " to " + rule.fromTimeFrame().endTime()
+    );
+    System.out.print(
+      "To rule:  " +
+      rule.toTimeframe().startTime() +
+      " to " +
+      rule.toTimeframe().endTime() +
+      "\n==========\n"
+    );
+    var startCondition =
+      startTime.isAfter(rule.fromTimeFrame().startTime()) &&
+      startTime.isBefore(rule.fromTimeFrame().endTime());
+    var endCondition =
+      endTime.isAfter(rule.toTimeframe().startTime()) &&
+      endTime.isBefore(rule.toTimeframe().endTime());
+    return startCondition && endCondition;
   }
 
   /**

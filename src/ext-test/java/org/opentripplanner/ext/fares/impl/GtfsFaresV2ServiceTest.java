@@ -7,6 +7,7 @@ import static org.opentripplanner.transit.model._data.TransitModelForTest.FEED_I
 
 import com.google.common.collect.Multimaps;
 import java.time.Duration;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +18,7 @@ import org.opentripplanner.ext.fares.model.FareDistance;
 import org.opentripplanner.ext.fares.model.FareLegRule;
 import org.opentripplanner.ext.fares.model.FareProduct;
 import org.opentripplanner.ext.fares.model.FareTransferRule;
+import org.opentripplanner.ext.fares.model.Timeframe;
 import org.opentripplanner.framework.geometry.SphericalDistanceLibrary;
 import org.opentripplanner.model.plan.Itinerary;
 import org.opentripplanner.model.plan.Place;
@@ -399,6 +401,72 @@ class GtfsFaresV2ServiceTest implements PlanTestConstants {
         )
       );
       assertEquals(faresV2Service.getProducts(i1).itineraryProducts(), Set.of(threeKmProduct));
+    }
+  }
+
+  @Nested
+  class Timeframes {
+
+    Timeframe discountedFrame = new Timeframe(
+      new FeedScopedId(FEED_ID, "discount"),
+      LocalTime.parse("10:59"),
+      LocalTime.parse("12:00")
+    );
+    Timeframe regularFrame1 = new Timeframe(
+      new FeedScopedId(FEED_ID, "regular1"),
+      LocalTime.parse("00:00"),
+      LocalTime.parse("10:58")
+    );
+    Timeframe regularFrame2 = new Timeframe(
+      new FeedScopedId(FEED_ID, "regular2"),
+      LocalTime.parse("12:01"),
+      LocalTime.parse("23:59")
+    );
+
+    FareProduct discountedFare = new FareProduct(
+      new FeedScopedId(FEED_ID, "discount"),
+      "Discounted fare",
+      Money.euros(200),
+      Duration.ofHours(1),
+      null,
+      null
+    );
+    FareProduct regularFare = new FareProduct(
+      new FeedScopedId(FEED_ID, "regular"),
+      "Regular fare",
+      Money.euros(300),
+      Duration.ofHours(1),
+      null,
+      null
+    );
+    List<FareLegRule> fareLegRules = List.of(
+      new FareLegRule(null, null, null, null, null, discountedFare, discountedFrame, regularFrame2),
+      new FareLegRule(
+        null,
+        null,
+        null,
+        null,
+        null,
+        discountedFare,
+        discountedFrame,
+        discountedFrame
+      ),
+      new FareLegRule(null, null, null, null, null, regularFare, discountedFrame, regularFrame1),
+      new FareLegRule(null, null, null, null, null, regularFare, discountedFrame, regularFrame2)
+    );
+
+    GtfsFaresV2Service service = new GtfsFaresV2Service(
+      fareLegRules,
+      List.of(),
+      Multimaps.forMap(
+        Map.of(INNER_ZONE_STOP.stop.getId(), INNER_ZONE, OUTER_ZONE_STOP.stop.getId(), OUTER_ZONE)
+      )
+    );
+
+    @Test
+    void timeframes() {
+      var i1 = newItinerary(A, T11_00).bus(ID, T11_00, T11_50, B).build();
+      assertEquals(service.getProducts(i1).itineraryProducts(), Set.of(discountedFare));
     }
   }
 }

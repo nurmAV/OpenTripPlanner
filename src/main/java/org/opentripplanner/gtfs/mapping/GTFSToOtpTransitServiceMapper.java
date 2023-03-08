@@ -69,6 +69,7 @@ public class GTFSToOtpTransitServiceMapper {
   private final FareProductMapper fareProductMapper;
 
   private final FareLegRuleMapper fareLegRuleMapper;
+  private final TimeframeMapper timeframeMapper;
 
   private final FareTransferRuleMapper fareTransferRuleMapper;
 
@@ -127,7 +128,8 @@ public class GTFSToOtpTransitServiceMapper {
     frequencyMapper = new FrequencyMapper(tripMapper);
     fareRuleMapper = new FareRuleMapper(routeMapper, fareAttributeMapper);
     fareProductMapper = new FareProductMapper();
-    fareLegRuleMapper = new FareLegRuleMapper(fareProductMapper, issueStore);
+    this.timeframeMapper = new TimeframeMapper();
+    fareLegRuleMapper = new FareLegRuleMapper(fareProductMapper, timeframeMapper, issueStore);
     fareTransferRuleMapper = new FareTransferRuleMapper(fareProductMapper, issueStore);
   }
 
